@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dropzone</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">dropzone</a>
+    <div class="nav-links">
+      <a href="/" class="active">Capture</a>
+      <a href="/feed">Feed</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="capture-form">
+      <textarea id="body-input" placeholder="Drop an idea, note, or thought..."></textarea>
+
+      <div class="dropzone" id="dropzone">
+        <span>Drop a file here, paste, or click to browse</span>
+        <input type="file" id="file-input" />
+      </div>
+
+      <div id="file-preview-container"></div>
+
+      <div class="tags-input">
+        <label for="tags-input">Tags (comma-separated)</label>
+        <input type="text" id="tags-input" placeholder="idea, project, urgent" />
+      </div>
+
+      <div class="capture-actions">
+        <button id="clear-btn">Clear</button>
+        <button class="primary" id="submit-btn">Drop it</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="/app.js"></script>
+  <script src="/capture.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dropzone - Feed</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">dropzone</a>
+    <div class="nav-links">
+      <a href="/">Capture</a>
+      <a href="/feed" class="active">Feed</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="feed-header">
+      <h2 id="feed-title">All drops</h2>
+    </div>
+
+    <div class="tag-filters" id="tag-filters"></div>
+    <div id="feed-items"></div>
+    <div class="loading" id="loading" style="display:none;">Loading...</div>
+    <div class="empty-state" id="empty-state" style="display:none;">No drops yet. <a href="/">Capture something!</a></div>
+  </main>
+
+  <script src="/app.js"></script>
+  <script src="/feed.js"></script>
+</body>
+</html>
