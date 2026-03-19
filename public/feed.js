@@ -9,14 +9,27 @@ let cursor = null;
 let loading = false;
 let hasMore = true;
 
+// Special feeds: /hidden and /trash are standalone routes
+const HIDDEN_TAGS = ['hidden', 'trash'];
+const specialFeed = window.location.pathname === '/hidden' ? 'hidden'
+  : window.location.pathname === '/trash' ? 'trash'
+  : null;
+
 // Read initial tag from URL like /feed/facebook
-const pathTag = window.location.pathname.match(/^\/feed\/(.+)/);
-let activeTag = pathTag ? decodeURIComponent(pathTag[1]) : null;
+const pathTag = !specialFeed && window.location.pathname.match(/^\/feed\/(.+)/);
+let activeTag = specialFeed || (pathTag ? decodeURIComponent(pathTag[1]) : null);
 
 // Load tags
 async function loadTags() {
+  // No tag pills on special feeds
+  if (specialFeed) {
+    tagFilters.innerHTML = '';
+    return;
+  }
+
   try {
-    const tags = await apiFetch('/api/tags');
+    const url = '/api/tags?exclude=' + encodeURIComponent(HIDDEN_TAGS.join(','));
+    const tags = await apiFetch(url);
     tagFilters.innerHTML = '';
 
     if (tags.length === 0) return;
@@ -59,6 +72,8 @@ async function loadItems() {
     let url = `/api/items?limit=20`;
     if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
     if (activeTag) url += `&tag=${encodeURIComponent(activeTag)}`;
+    // On main feed (no tag filter), exclude hidden/trash items
+    if (!activeTag) url += `&exclude_tags=${encodeURIComponent(HIDDEN_TAGS.join(','))}`;
 
     const data = await apiFetch(url);
 
@@ -215,7 +230,9 @@ function onAuthenticated() {
   resetAndLoad();
 }
 
-if (activeTag) {
+if (specialFeed) {
+  feedTitle.textContent = specialFeed === 'hidden' ? 'Hidden' : 'Trash';
+} else if (activeTag) {
   feedTitle.textContent = `#${activeTag}`;
 }
 

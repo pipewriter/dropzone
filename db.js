@@ -67,18 +67,29 @@ function getItem(id) {
   return item;
 }
 
-function listItems({ cursor, limit = 20, tag }) {
+function listItems({ cursor, limit = 20, tag, excludeTags }) {
   let sql = 'SELECT items.* FROM items';
   const params = [];
+  const where = [];
 
   if (tag) {
     sql += ' INNER JOIN tags ON tags.item_id = items.id AND tags.tag = ?';
     params.push(tag);
   }
 
+  if (excludeTags && excludeTags.length) {
+    const placeholders = excludeTags.map(() => '?').join(',');
+    where.push(`items.id NOT IN (SELECT item_id FROM tags WHERE tag IN (${placeholders}))`);
+    params.push(...excludeTags);
+  }
+
   if (cursor) {
-    sql += ' WHERE items.created_at < ?';
+    where.push('items.created_at < ?');
     params.push(cursor);
+  }
+
+  if (where.length) {
+    sql += ' WHERE ' + where.join(' AND ');
   }
 
   sql += ' ORDER BY items.created_at DESC LIMIT ?';
@@ -104,7 +115,15 @@ function deleteItem(id) {
   return item;
 }
 
-function getAllTags() {
+function getAllTags({ excludeTags } = {}) {
+  if (excludeTags && excludeTags.length) {
+    const placeholders = excludeTags.map(() => '?').join(',');
+    return db.prepare(`
+      SELECT tag, COUNT(*) as count FROM tags
+      WHERE tag NOT IN (${placeholders})
+      GROUP BY tag ORDER BY count DESC, tag ASC
+    `).all(...excludeTags);
+  }
   return stmts.getAllTags.all();
 }
 

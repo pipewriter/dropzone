@@ -62,6 +62,16 @@ nav a:hover, nav a.active {
   color: var(--text);
 }
 
+nav .nav-icon {
+  font-size: 16px;
+  opacity: 0.3;
+  transition: opacity 0.15s;
+}
+
+nav .nav-icon:hover, nav .nav-icon.active {
+  opacity: 0.8;
+}
+
 /* Main content */
 main {
   max-width: var(--max-width);

@@ -101,11 +101,13 @@ app.post('/api/items', requireAuth, upload.single('file'), (req, res) => {
 });
 
 app.get('/api/items', requireAuth, (req, res) => {
-  const { cursor, limit, tag } = req.query;
+  const { cursor, limit, tag, exclude_tags } = req.query;
+  const excludeTags = exclude_tags ? exclude_tags.split(',').map(t => t.trim()).filter(Boolean) : undefined;
   const result = db.listItems({
     cursor,
     limit: Math.min(parseInt(limit) || 20, 100),
-    tag: tag || undefined
+    tag: tag || undefined,
+    excludeTags,
   });
   res.json(result);
 });
@@ -145,7 +147,9 @@ app.patch('/api/items/:id/tags', requireAuth, (req, res) => {
 // --- Tags ---
 
 app.get('/api/tags', requireAuth, (req, res) => {
-  res.json(db.getAllTags());
+  const { exclude } = req.query;
+  const excludeTags = exclude ? exclude.split(',').map(t => t.trim()).filter(Boolean) : undefined;
+  res.json(db.getAllTags({ excludeTags }));
 });
 
 // --- File serving ---
@@ -165,6 +169,14 @@ app.get('/feed', (req, res) => {
 });
 
 app.get('/feed/:tag', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'feed.html'));
+});
+
+app.get('/hidden', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'feed.html'));
+});
+
+app.get('/trash', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'feed.html'));
 });
 
