@@ -58,20 +58,25 @@ function showPreview(file) {
   const preview = document.createElement('div');
   preview.className = 'file-preview';
 
-  let thumb = '';
+  let mediaEl = '';
   if (file.type.startsWith('image/')) {
     const url = URL.createObjectURL(file);
-    thumb = `<img src="${url}" alt="" />`;
+    mediaEl = `<img src="${url}" alt="" />`;
   } else if (file.type.startsWith('video/')) {
     const url = URL.createObjectURL(file);
-    thumb = `<video src="${url}" muted></video>`;
+    mediaEl = `<video src="${url}" muted></video>`;
+  } else if (file.type.startsWith('audio/')) {
+    const url = URL.createObjectURL(file);
+    mediaEl = `<audio src="${url}" controls></audio>`;
   }
 
+  const isAudio = file.type.startsWith('audio/');
   preview.innerHTML = `
-    ${thumb}
+    ${isAudio ? '' : mediaEl}
     <div class="file-info">
       <div class="file-name">${escapeHtml(file.name)}</div>
       <div class="file-size">${formatSize(file.size)}</div>
+      ${isAudio ? mediaEl : ''}
     </div>
     <button class="remove-file" title="Remove file">&times;</button>
   `;
@@ -83,6 +88,64 @@ function showPreview(file) {
   });
 
   previewContainer.appendChild(preview);
+}
+
+// --- Audio recording ---
+const recordBtn = document.getElementById('record-btn');
+const recordTimer = document.getElementById('record-timer');
+const recordLabel = recordBtn.querySelector('.record-label');
+
+let mediaRecorder = null;
+let recordingChunks = [];
+let recordingStart = null;
+let timerInterval = null;
+
+recordBtn.addEventListener('click', async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordingChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.addEventListener('dataavailable', e => {
+      if (e.data.size > 0) recordingChunks.push(e.data);
+    });
+
+    mediaRecorder.addEventListener('stop', () => {
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(timerInterval);
+      recordTimer.textContent = '';
+      recordBtn.classList.remove('recording');
+      recordLabel.textContent = 'Record';
+
+      const blob = new Blob(recordingChunks, { type: mediaRecorder.mimeType });
+      const ext = mediaRecorder.mimeType.includes('webm') ? 'webm'
+        : mediaRecorder.mimeType.includes('ogg') ? 'ogg'
+        : mediaRecorder.mimeType.includes('mp4') ? 'm4a' : 'audio';
+      const file = new File([blob], `recording-${Date.now()}.${ext}`, { type: mediaRecorder.mimeType });
+      setFile(file);
+    });
+
+    mediaRecorder.start();
+    recordingStart = Date.now();
+    recordBtn.classList.add('recording');
+    recordLabel.textContent = 'Stop';
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+  } catch (err) {
+    showToast('Microphone access denied');
+  }
+});
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - recordingStart) / 1000);
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  recordTimer.textContent = `${m}:${String(s).padStart(2, '0')}`;
 }
 
 // Submit
@@ -141,6 +204,9 @@ clearBtn.addEventListener('click', () => {
   selectedFile = null;
   previewContainer.innerHTML = '';
   fileInput.value = '';
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
   bodyInput.focus();
 });
 
