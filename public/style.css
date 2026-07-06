@@ -384,6 +384,33 @@ textarea {
   border-radius: 4px;
 }
 
+.item-card .item-transcript {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.item-card .item-transcript.pending {
+  font-style: italic;
+  animation: transcript-pulse 1.5s ease-in-out infinite;
+}
+
+.item-card .item-transcript.error {
+  border-left-color: var(--danger);
+}
+
+@keyframes transcript-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 .item-card .item-file-link {
   display: inline-flex;
   align-items: center;

@@ -88,6 +88,17 @@ function renderItem(item) {
     }
   }
 
+  let transcriptHtml = '';
+  if (item.type === 'audio') {
+    if (item.transcript_status === 'pending') {
+      transcriptHtml = `<div class="item-transcript pending">Transcribing&hellip;</div>`;
+    } else if (item.transcript_status === 'done' && item.transcript) {
+      transcriptHtml = `<div class="item-transcript">${escapeHtml(item.transcript)}</div>`;
+    } else if (item.transcript_status === 'error') {
+      transcriptHtml = `<div class="item-transcript error">Transcription failed</div>`;
+    }
+  }
+
   const bodyHtml = item.body ? `<div class="item-body">${escapeHtml(item.body)}</div>` : '';
 
   const tagSpans = (item.tags || []).map(t =>
@@ -97,6 +108,7 @@ function renderItem(item) {
 
   card.innerHTML = `
     ${mediaHtml}
+    ${transcriptHtml}
     ${bodyHtml}
     <div class="item-meta">
       <div>
@@ -107,7 +119,25 @@ function renderItem(item) {
     </div>
   `;
 
+  if (item.type === 'audio' && item.transcript_status === 'pending') {
+    pollTranscript(card, item.id);
+  }
+
   return card;
+}
+
+// Poll a pending transcription and swap in the finished card
+function pollTranscript(card, id) {
+  setTimeout(async () => {
+    if (!card.isConnected) return; // card was removed or replaced
+    try {
+      const item = await apiFetch(`/api/items/${id}`);
+      if (item.transcript_status === 'pending') return pollTranscript(card, id);
+      card.replaceWith(renderItem(item));
+    } catch (err) {
+      if (err.message !== 'Unauthorized') pollTranscript(card, id);
+    }
+  }, 3000);
 }
 
 // Utilities

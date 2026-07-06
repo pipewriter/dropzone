@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const db = require('./db');
+const transcriber = require('./transcriber');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -93,6 +94,12 @@ app.post('/api/items', requireAuth, upload.single('file'), (req, res) => {
     }
 
     const item = db.createItem({ id, type, body, filename, mime_type, file_size, tags });
+
+    if (type === 'audio' && filename) {
+      transcriber.enqueue(id, filename);
+      item.transcript_status = 'pending';
+    }
+
     res.status(201).json(item);
   } catch (err) {
     console.error('Create item error:', err);
@@ -186,6 +193,7 @@ app.get('/', (req, res) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Dropzone running on http://localhost:${PORT}`);
+  transcriber.resumePending();
 });
 
 // Graceful shutdown — close DB cleanly so WAL is checkpointed

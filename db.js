@@ -32,6 +32,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
 `);
 
+// Migration: transcript columns for audio items
+// transcript_status: NULL (n/a) | 'pending' | 'done' | 'error'
+const itemCols = db.prepare(`PRAGMA table_info(items)`).all().map(c => c.name);
+if (!itemCols.includes('transcript')) {
+  db.exec(`
+    ALTER TABLE items ADD COLUMN transcript TEXT;
+    ALTER TABLE items ADD COLUMN transcript_status TEXT;
+  `);
+}
+
 const stmts = {
   insertItem: db.prepare(`
     INSERT INTO items (id, type, body, filename, mime_type, file_size)
@@ -138,6 +148,25 @@ function setTags(itemId, tags) {
   return getItem(itemId);
 }
 
+function setTranscriptStatus(id, status) {
+  db.prepare(`UPDATE items SET transcript_status = ? WHERE id = ?`).run(status, id);
+}
+
+function setTranscript(id, transcript, status) {
+  db.prepare(`UPDATE items SET transcript = ?, transcript_status = ? WHERE id = ?`).run(transcript, status, id);
+}
+
+// Audio items interrupted mid-transcription by a restart. Recordings from
+// before this feature (status NULL) are deliberately left alone.
+function getPendingTranscriptions() {
+  return db.prepare(`
+    SELECT id, filename FROM items
+    WHERE type = 'audio' AND filename IS NOT NULL
+      AND transcript_status = 'pending'
+    ORDER BY created_at ASC
+  `).all();
+}
+
 function close() {
   try {
     db.pragma('wal_checkpoint(TRUNCATE)');
@@ -148,4 +177,4 @@ function close() {
   }
 }
 
-module.exports = { createItem, getItem, listItems, deleteItem, getAllTags, setTags, close };
+module.exports = { createItem, getItem, listItems, deleteItem, getAllTags, setTags, setTranscriptStatus, setTranscript, getPendingTranscriptions, close };
